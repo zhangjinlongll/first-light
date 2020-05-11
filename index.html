@@ -1,0 +1,85 @@
+<!DOCTYPE html>  
+<html>  
+<head>  
+    <title>html</title>
+</head>
+<body>  
+        <div class="wrap">
+        <div>
+            <input type="file" id="files1" name="file" />
+        </div>
+        <div>
+            <input type="file" id="files2" name="file" />
+        </div>
+            <button id="upload">upload</button>
+    </div>
+    <script>
+        var socket
+
+        document.getElementById("upload").addEventListener("click", function () {
+            var open_SUCC = openSocket("ws://localhost:8001")
+            setTimeout(function () {
+                fileUpload()
+            }, 500)
+        }, false)
+          
+        function openSocket (url) {
+            if (!window.WebSocket) {
+                window.WebSocket = window.MozWebSocket
+            }
+            if (window.WebSocket) {
+                socket = new WebSocket(url)
+                socket.onopen = onOpen
+                return 'ok'
+            }else {
+                 alert("your browser does not support websocket")
+            }
+        }
+
+        function onOpen (event) {
+             console.log("websocket is opened")
+        }
+          
+        function fileUpload () {
+            var files = new Array()
+            files[0] = document.getElementById('files1').files
+            files[1] = document.getElementById('files2').files
+                    //files = document.getElementById('files1').files
+            if ((!files[0].length) && (!files[1].length)) {
+                    //if (!files.length) {
+                    alert('Please select a file!')
+                    return
+            }
+            for (var i=0; i<files.length; i++) {
+                    var file = files[i][0]//
+                    var fileInfo = {
+                            "opcode":1,
+                            "name":file.name,
+                            "size":file.size,
+                            "lastModifiedDate":file.lastModifiedDate
+                    }
+                    send(JSON.stringify(fileInfo))
+            }
+            socket.onmessage = function (event) {
+                    var startStop = JSON.parse(event.data)
+                    if (startStop.startByte === startStop.stopByte || startStop.complete) {
+                        console.log(startStop)
+                        console.log("文件上传成功!")
+                    }
+            }
+        }
+
+        function send (message) {
+            if(!window.WebSocket){
+                return
+            }
+            if (socket.readyState==WebSocket.OPEN) {
+                socket.send(message)
+            }else {
+                console.log("the socket is not open")
+            }
+        }
+
+    </script>
+</body>  
+</html>
